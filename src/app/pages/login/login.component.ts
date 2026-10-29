@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+﻿import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { finalize } from 'rxjs';
 import { homeUrl } from '../../core/guards/auth.guard';
 import { PortalRole } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -31,6 +32,17 @@ export class LoginComponent {
   touchMessage = '';
   showPassword = false;
   loginAs: PortalRole = 'Employee';
+  readonly demoMode = environment.demoMode;
+
+  /** Public live demo: one-click login with the shared demo accounts. */
+  tryDemo(role: PortalRole): void {
+    this.setRole(role);
+    this.form.patchValue({
+      email: role === 'Admin' ? 'demo.admin@hrportal.demo' : 'demo.employee@hrportal.demo',
+      password: 'Demo@123'
+    });
+    this.login();
+  }
 
   setRole(role: PortalRole): void {
     this.loginAs = role;

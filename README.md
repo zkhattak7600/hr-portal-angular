@@ -12,6 +12,25 @@ Backend API: **[hr-portal-api](https://github.com/zkhattak7600/hr-portal-api)** 
 
 ---
 
+## 🚀 Live Demo
+
+| | Link |
+|---|---|
+| **App** | https://hr-portal-angular.vercel.app |
+| **API (Swagger)** | https://hr-portal-api.onrender.com/swagger |
+
+On the login page click **Try as Admin** or **Try as Employee**, or sign in manually:
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `demo.admin@hrportal.demo` | `Demo@123` |
+| Employee | `demo.employee@hrportal.demo` | `Demo@123` |
+
+> ⏳ The API runs on Render's free tier and sleeps when idle — the **first request can take ~50 seconds** to wake it up.
+> In the demo, delete actions and password resets are disabled and the data resets whenever the server restarts.
+
+---
+
 ## Features
 
 ### Authentication
@@ -104,3 +123,8 @@ server.ts                # SSR server
 
 **Zain Khattak** — Frontend Developer (Angular & TypeScript)
 GitHub: [@zkhattak7600](https://github.com/zkhattak7600)
+
+## Deployment (Vercel)
+The production build (`npm run build`) uses `src/environments/environment.prod.ts` (API URL + demo mode) and is deployed as a static SPA.
+`vercel.json` sets the output directory to `dist/employee-leave-management/browser` and rewrites all routes to `index.csr.html`.
+Local development (`ng serve`) keeps using `environment.ts` → `http://localhost:5000/api` with demo mode off.

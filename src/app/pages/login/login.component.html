@@ -1,4 +1,4 @@
-<section class="login-page">
+﻿<section class="login-page">
   <div class="login-shell">
     <aside class="brand-panel" aria-hidden="false">
       <span class="shape shape-1" aria-hidden="true"></span>
@@ -36,6 +36,17 @@
           <h2>Welcome back</h2>
           <p>{{ loginAs === 'Admin' ? 'Sign in to manage employees, leave and approvals.' : 'Sign in to view your leave, attendance and payslips.' }}</p>
         </header>
+
+        @if (demoMode) {
+          <div style="margin:0 0 1rem;padding:.75rem;border:1px dashed #94a3b8;border-radius:.75rem;background:#f8fafc">
+            <p style="margin:0 0 .5rem;font-size:.85rem;font-weight:600">Live demo &mdash; try it instantly</p>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button type="button" class="submit" style="flex:1;margin:0" [disabled]="loading" (click)="tryDemo('Admin')">Try as Admin</button>
+              <button type="button" class="submit" style="flex:1;margin:0" [disabled]="loading" (click)="tryDemo('Employee')">Try as Employee</button>
+            </div>
+            <p style="margin:.5rem 0 0;font-size:.75rem;color:#64748b">The free demo server may take ~50 seconds to wake up on the first request.</p>
+          </div>
+        }
 
         <div class="field">
           <label for="login-email">Email address</label>
