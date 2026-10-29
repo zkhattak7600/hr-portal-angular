@@ -1,0 +1,70 @@
+<section class="page">
+  <div class="emp-hero">
+    <div>
+      <span class="emp-hero-tag">Employee self-service</span>
+      <h1>Welcome back, {{ user()?.fullName }}</h1>
+      <p>Your leave, attendance and pay at a glance.</p>
+    </div>
+    <a class="btn emp-hero-btn" routerLink="/employee/leaves">+ Apply for leave</a>
+  </div>
+
+  @if (noProfile()) {
+    <div class="alert alert-info">{{ noProfileText }}</div>
+  } @else {
+    <app-check-in-card (changed)="load()" />
+    <app-state [loading]="loading()" [error]="error()" loadingText="Loading your dashboard..." />
+    @if (stats(); as s) {
+      <div class="stats emp-stats">
+        <a class="stat stat-amber" routerLink="/employee/leaves">
+          <span class="stat-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"/></svg></span>
+          <div><div class="label">Pending Leaves</div><div class="value">{{ s.pendingLeaves }}</div></div>
+        </a>
+        <a class="stat stat-green" routerLink="/employee/leaves">
+          <span class="stat-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></span>
+          <div><div class="label">Approved Leaves</div><div class="value">{{ s.approvedLeaves }}</div></div>
+        </a>
+        <a class="stat stat-red" routerLink="/employee/leaves">
+          <span class="stat-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          <div><div class="label">Rejected Leaves</div><div class="value">{{ s.rejectedLeaves }}</div></div>
+        </a>
+        <div class="stat stat-violet">
+          <span class="stat-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg></span>
+          <div><div class="label">Leave Days Taken ({{ s.attendance.year }})</div><div class="value">{{ s.leaveDaysTakenThisYear }}</div></div>
+        </div>
+        <a class="stat stat-blue" routerLink="/employee/attendance">
+          <span class="stat-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0"/></svg></span>
+          <div>
+            <div class="label">Present this month ({{ months[s.attendance.month - 1] }})</div>
+            <div class="value">{{ s.attendance.present + s.attendance.late + s.attendance.halfDay }} / {{ s.attendance.total }}</div>
+            <div class="muted">Late {{ s.attendance.late }} &middot; Half day {{ s.attendance.halfDay }} &middot; Absent {{ s.attendance.absent }}</div>
+          </div>
+        </a>
+      </div>
+
+      <app-leave-balance [balances]="balance()" [loading]="balanceLoading()" [error]="balanceError()" />
+
+      <div class="card emp-section">
+        <div class="card-head">
+          <h2>Recent leave requests</h2>
+          <a routerLink="/employee/leaves" class="btn btn-light btn-sm">View all</a>
+        </div>
+        <app-state [empty]="recent().length === 0" emptyText="You have not applied for any leave yet." />
+        @if (recent().length) {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Type</th><th>From</th><th>To</th><th class="num">Days</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (l of recent(); track l.id) {
+                  <tr>
+                    <td>{{ l.leaveType }}</td><td>{{ dateOnly(l.startDate) }}</td><td>{{ dateOnly(l.endDate) }}</td>
+                    <td class="num">{{ l.days }}</td><td><span [class]="'badge badge-' + l.status">{{ l.status }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

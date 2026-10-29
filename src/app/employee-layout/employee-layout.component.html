@@ -1,0 +1,70 @@
+<div class="shell emp" [class.open]="menuOpen()">
+  <aside class="sidebar no-print" aria-label="Employee navigation">
+    <div class="side-inner">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <strong>Employee Portal</strong>
+        <small>Self-service</small>
+      </div>
+      <button type="button" class="side-close" (click)="menuOpen.set(false)" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="nav-label">Menu</div>
+    <nav>
+      @for (item of nav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active">
+          <span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="item.icon"/></svg></span>
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+    <div class="side-foot">
+      <button type="button" class="side-logout" (click)="logout()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>
+        Logout
+      </button>
+    </div>
+    </div>
+  </aside>
+  <div class="backdrop no-print" (click)="menuOpen.set(false)"></div>
+
+  <div class="main">
+    <header class="topbar no-print">
+      <button type="button" class="burger" (click)="toggle()" aria-label="Toggle menu" [attr.aria-expanded]="menuOpen()">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="greet">
+        <strong>{{ greeting }}{{ firstName() ? ', ' + firstName() : '' }}</strong>
+        <small>{{ dateText }}</small>
+      </div>
+      <div class="user">
+        @if (user(); as u) {
+          <button type="button" class="user-btn" (click)="userMenuOpen.set(!userMenuOpen())" [attr.aria-expanded]="userMenuOpen()" aria-haspopup="menu">
+            <app-avatar class="avatar-photo" [photoUrl]="u.photoUrl" [name]="u.fullName" [size]="38" />
+            <span class="who">
+              <strong>{{ u.fullName }}</strong>
+              <small>Employee</small>
+            </span>
+            <svg class="caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          @if (userMenuOpen()) {
+            <div class="user-menu-backdrop" (click)="userMenuOpen.set(false)"></div>
+            <div class="user-menu" role="menu">
+              <div class="um-head"><strong>{{ u.fullName }}</strong><small>Employee</small></div>
+              <a routerLink="/employee/profile" role="menuitem">My Profile</a>
+              <a routerLink="/employee/payslips" role="menuitem">My Payslips</a>
+              <button type="button" role="menuitem" class="um-logout" (click)="logout()">Logout</button>
+            </div>
+          }
+        } @else {
+          <button type="button" class="btn btn-light btn-sm" (click)="logout()">Logout</button>
+        }
+      </div>
+    </header>
+    <main>
+      <router-outlet />
+    </main>
+  </div>
+</div>

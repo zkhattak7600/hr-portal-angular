@@ -1,0 +1,187 @@
+<section class="page" [class.printing]="viewing()">
+  <div class="page-head no-print">
+    <div>
+      <h1>Payroll</h1>
+      <p>Monthly payslips and salary processing.</p>
+    </div>
+    @if (isAdmin()) {
+      <button type="button" class="btn" (click)="openGenerate()">Generate payroll</button>
+    }
+  </div>
+
+  <div class="card no-print">
+    <div class="toolbar">
+      <label class="field">
+        <span>Month</span>
+        <select class="input" [(ngModel)]="month" (ngModelChange)="load()">
+          @for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Year</span>
+        <select class="input" [(ngModel)]="year" (ngModelChange)="load()">
+          @for (y of years; track y) { <option [ngValue]="y">{{ y }}</option> }
+        </select>
+      </label>
+      @if (items().length) {
+        <div class="summary">
+          <span>Total net: <strong>{{ totals().net | pkr }}</strong></span>
+          <span class="badge badge-Paid">{{ totals().paid }} paid</span>
+          <span class="badge badge-Draft">{{ totals().draft }} draft</span>
+        </div>
+      }
+    </div>
+
+    <app-state [loading]="loading()" [error]="error()" [empty]="items().length === 0"
+               [emptyText]="'No payslips for ' + months[month - 1] + ' ' + year + '.' + (isAdmin() ? ' Use Generate payroll to create them.' : '')" />
+    @if (!loading() && !error() && items().length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Employee</th><th>Department</th><th class="num">Basic</th><th class="num">Allowances</th><th class="num">Deductions</th><th class="num">Tax</th><th class="num">Net</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (p of pagedItems(); track p.id) {
+              <tr>
+                <td><strong>{{ p.employeeName }}</strong><div class="muted">{{ p.employeeCode }}</div></td>
+                <td>{{ p.departmentName }}</td>
+                <td class="num">{{ p.basicSalary | pkr }}</td>
+                <td class="num">{{ p.allowances | pkr }}</td>
+                <td class="num">{{ p.deductions | pkr }}</td>
+                <td class="num">{{ p.tax | pkr }}</td>
+                <td class="num"><strong>{{ p.netSalary | pkr }}</strong></td>
+                <td><span [class]="'badge badge-' + p.status">{{ p.status }}</span></td>
+                <td>
+                  <div class="actions row-actions">
+                    @if (isAdmin() && p.status === 'Draft') {
+                      <button type="button" class="btn btn-success btn-sm" (click)="pay(p)">Mark paid</button>
+                    }
+                    <button type="button" class="kebab-btn" [class.open]="rowMenu()?.p?.id === p.id" (click)="toggleRowMenu(p, $event)"
+                            aria-haspopup="menu" [attr.aria-expanded]="rowMenu()?.p?.id === p.id" [attr.aria-label]="'More actions for ' + p.employeeName">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-pagination [total]="items().length" [page]="page()" [pageSize]="pageSize()" (pageChange)="page.set($event); rowMenu.set(null)" (pageSizeChange)="setPageSize($event)" />
+    }
+  </div>
+</section>
+
+@if (rowMenu(); as m) {
+  <div class="row-menu no-print" role="menu" [style.left.px]="m.left" [style.top.px]="m.top" [style.bottom.px]="m.bottom">
+    <button type="button" role="menuitem" (click)="menuAction(view)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View
+    </button>
+    @if (isAdmin() && m.p.status === 'Draft') {
+      <button type="button" role="menuitem" (click)="menuAction(openEdit)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>Edit
+      </button>
+      <button type="button" role="menuitem" class="danger" (click)="menuAction(remove)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Delete
+      </button>
+    }
+  </div>
+}
+
+@if (generateOpen()) {
+  <div class="modal-backdrop" (click)="generateOpen.set(false)">
+    <form class="modal" [formGroup]="genForm" (ngSubmit)="generate()" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>Generate payroll &middot; {{ months[month - 1] }} {{ year }}</h3>
+        <button type="button" class="icon-btn" (click)="generateOpen.set(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (formError()) { <div class="alert alert-error">{{ formError() }}</div> }
+        <p class="muted">Creates draft payslips for all active employees. Employees who already have a payslip for this month are skipped. Leave a field empty to use the default.</p>
+        <div class="form-grid">
+          <label class="field"><span>Allowances (PKR)</span><input class="input" type="number" min="0" formControlName="allowances" /></label>
+          <label class="field"><span>Deductions (PKR)</span><input class="input" type="number" min="0" formControlName="deductions" /></label>
+          <label class="field"><span>Tax (PKR)</span><input class="input" type="number" min="0" formControlName="tax" /></label>
+        </div>
+        @if (genForm.invalid && genForm.touched) { <small class="field-error">Values must be 0 or more.</small> }
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-light" (click)="generateOpen.set(false)">Cancel</button>
+        <button type="submit" class="btn" [disabled]="saving()">{{ saving() ? 'Generating...' : 'Generate' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (editing(); as p) {
+  <div class="modal-backdrop" (click)="editing.set(null)">
+    <form class="modal" [formGroup]="editForm" (ngSubmit)="saveEdit()" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>Edit payslip &middot; {{ p.employeeName }}</h3>
+        <button type="button" class="icon-btn" (click)="editing.set(null)">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (formError()) { <div class="alert alert-error">{{ formError() }}</div> }
+        <div class="form-grid">
+          <label class="field"><span>Basic salary</span><input class="input" type="number" min="0" formControlName="basicSalary" /></label>
+          <label class="field"><span>Allowances</span><input class="input" type="number" min="0" formControlName="allowances" /></label>
+          <label class="field"><span>Deductions</span><input class="input" type="number" min="0" formControlName="deductions" /></label>
+          <label class="field"><span>Tax</span><input class="input" type="number" min="0" formControlName="tax" /></label>
+          <div class="full alert alert-info">Net salary: <strong>{{ editNet | pkr }}</strong></div>
+        </div>
+        @if (editForm.invalid && editForm.touched) { <small class="field-error">All values are required and must be 0 or more.</small> }
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-light" (click)="editing.set(null)">Cancel</button>
+        <button type="submit" class="btn" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (viewing(); as p) {
+  <div class="modal-backdrop slip-backdrop" (click)="viewing.set(null)">
+    <div class="modal slip" (click)="$event.stopPropagation()">
+      <div class="modal-head no-print">
+        <h3>Payslip</h3>
+        <button type="button" class="icon-btn" (click)="viewing.set(null)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="slip-head">
+          <div>
+            <div class="slip-brand">HR Portal</div>
+            <div class="muted">Salary slip for {{ months[p.month - 1] }} {{ p.year }}</div>
+          </div>
+          <span [class]="'badge badge-' + p.status">{{ p.status }}</span>
+        </div>
+        <dl class="dl">
+          <dt>Employee</dt><dd>{{ p.employeeName }}</dd>
+          <dt>Employee code</dt><dd>{{ p.employeeCode }}</dd>
+          <dt>Department</dt><dd>{{ p.departmentName }}</dd>
+          <dt>Generated</dt><dd>{{ dateOnly(p.generatedAt) }}</dd>
+          <dt>Paid on</dt><dd>{{ p.paidAt ? dateOnly(p.paidAt) : '-' }}</dd>
+        </dl>
+        <table class="table slip-table">
+          <tbody>
+            <tr><td>Basic salary</td><td class="num">{{ p.basicSalary | pkr }}</td></tr>
+            <tr><td>Allowances</td><td class="num">+ {{ p.allowances | pkr }}</td></tr>
+            <tr><td>Deductions</td><td class="num">- {{ p.deductions | pkr }}</td></tr>
+            <tr><td>Tax</td><td class="num">- {{ p.tax | pkr }}</td></tr>
+            <tr class="net"><td>Net salary</td><td class="num">{{ p.netSalary | pkr }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-foot no-print">
+        @if (isAdmin() && p.status === 'Draft') {
+          <button type="button" class="btn btn-success" (click)="pay(p)">Mark paid</button>
+        }
+        <button type="button" class="btn btn-light" (click)="print()">Print</button>
+        <button type="button" class="btn btn-light" (click)="downloadPdf(p)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          Download PDF
+        </button>
+        <button type="button" class="btn" (click)="viewing.set(null)">Close</button>
+      </div>
+    </div>
+  </div>
+}

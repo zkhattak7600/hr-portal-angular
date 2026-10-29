@@ -1,0 +1,69 @@
+<section class="page">
+  <div class="page-head no-print"><div><h1>My Payslips</h1><p>Your monthly salary slips.</p></div></div>
+
+  @if (noProfile()) {
+    <div class="alert alert-info">{{ noProfileText }}</div>
+  } @else {
+    <div class="card" [class.printing]="selected()">
+      <app-state [loading]="loading()" [error]="error()" [empty]="items().length === 0" emptyText="No payslips have been generated for you yet." />
+      @if (!loading() && !error() && items().length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Period</th><th class="num">Basic</th><th class="num">Allowances</th><th class="num">Deductions</th><th class="num">Tax</th><th class="num">Net</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              @for (p of pagedItems(); track p.id) {
+                <tr>
+                  <td><strong>{{ months[p.month - 1] }} {{ p.year }}</strong></td>
+                  <td class="num">{{ p.basicSalary | pkr }}</td>
+                  <td class="num">{{ p.allowances | pkr }}</td>
+                  <td class="num">{{ p.deductions | pkr }}</td>
+                  <td class="num">{{ p.tax | pkr }}</td>
+                  <td class="num"><strong>{{ p.netSalary | pkr }}</strong></td>
+                  <td><span [class]="'badge badge-' + p.status">{{ p.status }}</span></td>
+                  <td><div class="actions row-actions"><button type="button" class="btn btn-light btn-sm" (click)="view(p)">View</button></div></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="no-print"><app-pagination [total]="items().length" [page]="page()" [pageSize]="pageSize()" (pageChange)="page.set($event)" (pageSizeChange)="setPageSize($event)" /></div>
+      }
+    </div>
+  }
+
+  @if (selected(); as s) {
+    <div class="modal-backdrop slip-backdrop" (click)="selected.set(null)">
+      <div class="modal slip" (click)="$event.stopPropagation()">
+        <div class="modal-body">
+          <div class="slip-head">
+            <div><div class="slip-brand">HR Portal</div><div class="muted">Salary slip</div></div>
+            <div style="text-align:right"><strong>{{ months[s.month - 1] }} {{ s.year }}</strong><div><span [class]="'badge badge-' + s.status">{{ s.status }}</span></div></div>
+          </div>
+          <dl class="dl">
+            <dt>Employee</dt><dd>{{ s.employeeName }} ({{ s.employeeCode }})</dd>
+            <dt>Department</dt><dd>{{ s.departmentName || '-' }}</dd>
+            <dt>Generated</dt><dd>{{ dateOnly(s.generatedAt) }}</dd>
+            @if (s.paidAt) { <dt>Paid on</dt><dd>{{ dateOnly(s.paidAt) }}</dd> }
+          </dl>
+          <table class="table slip-table">
+            <tbody>
+              <tr><td>Basic salary</td><td class="num">{{ s.basicSalary | pkr }}</td></tr>
+              <tr><td>Allowances</td><td class="num">+ {{ s.allowances | pkr }}</td></tr>
+              <tr><td>Deductions</td><td class="num">- {{ s.deductions | pkr }}</td></tr>
+              <tr><td>Tax</td><td class="num">- {{ s.tax | pkr }}</td></tr>
+              <tr class="net"><td>Net salary</td><td class="num">{{ s.netSalary | pkr }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-foot no-print">
+          <button type="button" class="btn btn-light" (click)="selected.set(null)">Close</button>
+          <button type="button" class="btn btn-light" (click)="print()">Print</button>
+          <button type="button" class="btn" (click)="downloadPdf(s)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

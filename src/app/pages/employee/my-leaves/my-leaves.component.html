@@ -1,0 +1,64 @@
+<section class="page">
+  <div class="page-head">
+    <div><h1>My Leaves</h1><p>Apply for leave and track your requests.</p></div>
+    @if (!noProfile()) { <button type="button" class="btn" (click)="open()">+ Apply for leave</button> }
+  </div>
+
+  @if (noProfile()) {
+    <div class="alert alert-info">{{ noProfileText }}</div>
+  } @else {
+    <app-leave-balance [balances]="balance()" [loading]="balanceLoading()" [error]="balanceError()" />
+    <div class="card">
+      <app-state [loading]="loading()" [error]="error()" [empty]="items().length === 0" emptyText="You have no leave requests yet." />
+      @if (!loading() && !error() && items().length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Type</th><th>From</th><th>To</th><th class="num">Days</th><th>Reason</th><th>Status</th><th>Remarks</th><th></th></tr></thead>
+            <tbody>
+              @for (l of pagedItems(); track l.id) {
+                <tr>
+                  <td>{{ l.leaveType }}</td>
+                  <td>{{ dateOnly(l.startDate) }}</td>
+                  <td>{{ dateOnly(l.endDate) }}</td>
+                  <td class="num">{{ l.days }}</td>
+                  <td>{{ l.reason || '-' }}</td>
+                  <td><span [class]="'badge badge-' + l.status">{{ l.status }}</span></td>
+                  <td>{{ l.adminRemarks || '-' }}</td>
+                  <td>@if (l.status === 'Pending') { <button type="button" class="btn btn-danger btn-sm" (click)="cancel(l)">Cancel</button> }</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [total]="items().length" [page]="page()" [pageSize]="pageSize()" (pageChange)="page.set($event)" (pageSizeChange)="setPageSize($event)" />
+      }
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="modal-backdrop" (click)="showForm.set(false)">
+      <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="submit()">
+        <div class="modal-head"><h3>Apply for leave</h3><button type="button" class="icon-btn" (click)="showForm.set(false)">&times;</button></div>
+        <div class="modal-body">
+          @if (formError) { <div class="alert alert-error">{{ formError }}</div> }
+          <div class="form-grid">
+            <label class="field">
+              <span>Leave type</span>
+              <select class="input" name="leaveType" [(ngModel)]="leaveType">
+                @for (t of types; track t) { <option [ngValue]="t">{{ t }}</option> }
+              </select>
+            </label>
+            <div class="field"><span>Days</span><div class="input" style="background:#f8fafc">{{ dayCount(startDate, endDate) || '-' }}</div></div>
+            <label class="field"><span>Start date</span><input class="input" type="date" name="startDate" [(ngModel)]="startDate" required /></label>
+            <label class="field"><span>End date</span><input class="input" type="date" name="endDate" [(ngModel)]="endDate" [min]="startDate" required /></label>
+            <label class="field full"><span>Reason</span><textarea class="input" name="reason" [(ngModel)]="reason" maxlength="500"></textarea></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-light" (click)="showForm.set(false)">Close</button>
+          <button type="submit" class="btn" [disabled]="saving()">{{ saving() ? 'Submitting...' : 'Submit request' }}</button>
+        </div>
+      </form>
+    </div>
+  }
+</section>
